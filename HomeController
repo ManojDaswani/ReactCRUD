@@ -1,0 +1,114 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.Mvc;
+using System.Data;
+using talentonboarding.Models;
+using System.Data.Entity.Validation;
+
+namespace talentonboarding.Controllers
+{
+    public class HomController : Controller
+    {
+        private TalentEntities db = new TalentEntities();
+        // GET: Hom
+        public ActionResult Index()
+        {
+            return View();
+        }
+        public ActionResult AjaxPage()
+        {
+            return View();
+        }
+
+        //Test Ajax
+        [HttpPost]
+        public JsonResult MyajaxCall(string order)
+        {
+            return Json("ok");
+        }
+
+        public ActionResult Customer()
+        {
+            return View();
+        }
+
+        public JsonResult AddCustomer(Customer Customers)
+        {
+            try
+            {
+                db.Customers.Add(Customers);
+                db.SaveChanges();
+                return Json(Customers, JsonRequestBehavior.AllowGet);
+            }
+            catch (DbEntityValidationException e)
+            {
+                foreach (var eve in e.EntityValidationErrors)
+                {
+                    Console.WriteLine("Entity of type \"{0}\" in state \"{1}\" has the following validation errors:",
+                        eve.Entry.Entity.GetType().Name, eve.Entry.State);
+                    foreach (var ve in eve.ValidationErrors)
+                    {
+                        Console.WriteLine("- Property: \"{0}\", Error: \"{1}\"",
+                            ve.PropertyName, ve.ErrorMessage);
+                    }
+                }
+                throw;
+            }
+        }
+
+        public ActionResult ProductListing()
+        {
+            return View();
+        }
+
+        public JsonResult GetProducts()
+        {
+            var products = db.Products.Select(x => new ProductListViewModel
+            {
+                Id = x.Id,
+                ProductName = x.ProductName,
+                Price = x.Price
+
+            }).ToList();
+            return Json(products, JsonRequestBehavior.AllowGet);
+        }
+
+        public JsonResult AddProduct(Product Products)
+        {
+            db.Products.Add(Products);
+            db.SaveChanges();
+            return Json(Products, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpPost]
+        public ActionResult DeleteProduct(int id)
+        {
+            // delete Person from the database whose id matches with specified id
+            var product = db.Products.Find(id);
+            db.Products.Remove(product);
+            db.SaveChanges();
+            return Json(new { success = true }, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpPost]
+        public ActionResult UpdateProduct(ProductListViewModel product)
+        {
+            // update Product to the database
+            using (var db = new TalentEntities())
+            {
+                var lstProduct = db.Products.Where(ProductId => ProductId.Id == product.Id).FirstOrDefault();
+                if (lstProduct != null)
+                {
+                    db.Entry(lstProduct).CurrentValues.SetValues(product);
+                    db.SaveChanges();
+
+                    return Json(new { status = true, productId = product.Id, edit = true });
+                }
+                return Json(new { status = false, productId = product.Id, edit = true });
+            }
+        }
+
+    }
+}
